@@ -1,0 +1,341 @@
+import tkinter.ttk as ttk
+import tkinter.messagebox as msb
+from tkinter import *
+import sqlite3
+
+# --------- FRAMES - PRINCIPAL -------------
+root = Tk()
+root.title("VEÍCULOS AUTORIZADOS")
+font = 'Elephant'
+width = 900
+height = 550
+sc_width = root.winfo_screenwidth()
+sc_height = root.winfo_screenheight()
+x = (sc_width/2) - (width/2)
+y = (sc_height/2) - (height/2)
+root.geometry("%dx%d+%d+%d" % (width, height, x, y))
+root.resizable(0, 0)
+root.config(bg='#ab9103')
+
+# --------- VARIAVEIS -------------
+
+
+funcionario = StringVar()
+cpf = StringVar()
+veiculo = StringVar()
+placa = StringVar()
+setor = StringVar()
+
+id = None
+janela_atualizar = None
+janela_cadastrar = None
+
+
+# --------- METODOS -------------
+
+def database():
+    conn = sqlite3.connect('db_cad_veiculos')
+    cursor = conn.cursor()
+    query = """ CREATE TABLE IF NOT EXISTS 'CARRO' (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                funcionario TEXT, cpf TEXT, veiculo TEXT, placa TEXT, setor TEXT) """
+    cursor.execute(query)
+    cursor.execute("SELECT * FROM 'CARRO'")
+    buscar = cursor.fetchall()
+    for data in buscar:
+        tree.insert('', 'end', values=(data))
+    cursor.close()
+    conn.close()
+
+
+def enviar_dados():
+    if funcionario.get() == "" or cpf.get() == "" or veiculo.get() == "" or placa.get() == "" or setor.get() == "":
+        msb.showwarning("ERRO", "Preencha todos os campos.", icon="warning")
+    else:
+        tree.delete(*tree.get_children())
+        conn = sqlite3.connect('db_cad_veiculos')
+        cursor = conn.cursor()
+        query = """ INSERT INTO 'CARRO' (funcionario, cpf, veiculo, placa, setor) VALUES(?, ?, ?, ?, ?)"""
+        cursor.execute(query, (str(funcionario.get()), str(cpf.get()), str(
+            veiculo.get()), str(placa.get()), str(setor.get())))
+        conn.commit()
+        cursor.execute("SELECT * FROM 'CARRO' ")
+        fetch = cursor.fetchall()
+        for data in fetch:
+            tree.insert('', 'end', values=(data))
+        cursor.close()
+        conn.close()
+        funcionario.set("")
+        cpf.set("")
+        veiculo.set("")
+        placa.set("")
+        setor.set("")
+        janela_cadastrar.destroy()
+
+
+def alterar_dados():
+    tree.delete(*tree.get_children())
+    conn = sqlite3.connect('db_cad_veiculos')
+    cursor = conn.cursor()
+    cursor.execute(""" UPDATE 'CARRO' SET funcionario = ?, cpf = ?, veiculo = ?, placa = ?, setor = ? WHERE id = ?""",
+                   (str(funcionario.get()), str(cpf.get()), str(veiculo.get()), str(placa.get()), str(setor.get()), int(id)))
+    conn.commit()
+    cursor.execute("SELECT * FROM 'CARRO' ")
+    fetch = cursor.fetchall()
+    for data in fetch:
+        tree.insert('', 'end', values=(data))
+    cursor.close()
+    conn.close()
+    funcionario.set("")
+    cpf.set("")
+    veiculo.set("")
+    placa.set("")
+    setor.set("")
+    janela_atualizar.destroy()
+
+
+def selecionar_dado(event):
+    global id, janela_atualizar
+    item = tree.focus()
+    conteudo = (tree.item(item))
+    item_selecionado = conteudo['values']
+    id = item_selecionado[0]
+    funcionario.set("")
+    cpf.set("")
+    veiculo.set("")
+    placa.set("")
+    setor.set("")
+    funcionario.set(item_selecionado[1])
+    cpf.set(item_selecionado[2])
+    veiculo.set(item_selecionado[3])
+    placa.set(item_selecionado[4])
+    setor.set(item_selecionado[5])
+
+    # --------- FRAMES - ATUALIZAR -------------
+    janela_atualizar = Toplevel()
+    janela_atualizar.title("ATUALIZAR CADASTRO")
+    form_titulo = Frame(janela_atualizar)
+    form_titulo.pack(side=TOP)
+    form_CARRO = Frame(janela_atualizar)
+    form_CARRO.pack(side=TOP, pady=10)
+    width = 400
+    height = 300
+    sc_width = janela_atualizar.winfo_screenwidth()
+    sc_height = janela_atualizar.winfo_screenheight()
+    x = (sc_width/2) - (width/2)
+    y = (sc_height/2) - (height/2)
+    janela_atualizar.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    janela_atualizar.resizable(0, 0)
+
+    # --------- LABELS - ATUALIZAR -------------
+    lbl_title = Label(form_titulo, text="ATUALIZANDO DADOS",
+                      font=('Elephant', 18), bg='blue', width=280)
+    lbl_title.pack(fill=X)
+    lbl_funcionario = Label(
+        form_CARRO, text='Funcionário', font=('Elephant', 12))
+    lbl_funcionario.grid(row=0, sticky=W)
+    lbl_cpf = Label(form_CARRO, text='CPF', font=('Elephant', 12))
+    lbl_cpf.grid(row=1, sticky=W)
+    lbl_veiculo = Label(form_CARRO, text='Veículo', font=('Elephant', 12))
+    lbl_veiculo.grid(row=2, sticky=W)
+    lbl_placa = Label(form_CARRO, text='Placa', font=('Elephant', 12))
+    lbl_placa.grid(row=3, sticky=W)
+    lbl_setor = Label(form_CARRO, text='Setor', font=('Elephant', 12))
+    lbl_setor.grid(row=4, sticky=W)
+
+    # --------- ENTRY - ATUALIZAR -------------
+
+    funcionario_entry = Entry(
+        form_CARRO, textvariable=funcionario, font=('Lucinda Sans', 12))
+    funcionario_entry.grid(row=0, column=1)
+    cpf_entry = Entry(form_CARRO, textvariable=cpf, font=('Lucinda Sans', 12))
+    cpf_entry.grid(row=1, column=1)
+    veiculo_entry = Entry(form_CARRO, textvariable=veiculo,
+                          font=('Lucinda Sans', 12))
+    veiculo_entry.grid(row=2, column=1)
+    placa_entry = Entry(form_CARRO, textvariable=placa,
+                        font=('Lucinda Sans', 12))
+    placa_entry.grid(row=3, column=1)
+    setor_entry = Entry(form_CARRO, textvariable=setor,
+                        font=('Lucinda Sans', 12))
+    setor_entry.grid(row=4, column=1)
+
+    # --------- BOTÃO - ATUALIZAR -------------
+    bttn_atualizando = Button(form_CARRO, text="Atualizar",
+                              width=50, command=alterar_dados)
+    bttn_atualizando.grid(row=6, columnspan=2, pady=10)
+
+    # --------- METODO - DELETAR -------------
+
+
+def apagar_dado():
+    if not tree.selection():
+        msb.showwarning(
+            'ERRO', 'É necessário selecionar o veículo primeiro', icon='warning')
+    else:
+        resultado = msb.askquestion(
+            'EXCLUIR', 'TEM CERTEZA QUE DESEJA EXCLUIR O VEÍCULO CADASTRADO?')
+        if resultado == 'yes':
+            item = tree.focus()
+            conteudo = (tree.item(item))
+            item_selecionado = conteudo['values']
+            tree.delete(item)
+            conn = sqlite3.connect('db_cad_veiculos')
+            cursor = conn.cursor()
+            cursor.execute(
+                f"DELETE FROM 'CARRO' WHERE id = {item_selecionado[0]}")
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+
+def inserir_dados():
+    global janela_cadastrar
+    funcionario.set("")
+    cpf.set("")
+    veiculo.set("")
+    placa.set("")
+    setor.set("")
+
+    # --------- FRAMES - CADASTRAR -------------
+    janela_cadastrar = Toplevel()
+    janela_cadastrar.title("CADASTRO")
+    form_titulo = Frame(janela_cadastrar)
+    form_titulo.pack(side=TOP)
+    form_CARRO = Frame(janela_cadastrar)
+    form_CARRO.pack(side=TOP, pady=10)
+    width = 400
+    height = 300
+    sc_width = janela_cadastrar.winfo_screenwidth()
+    sc_height = janela_cadastrar.winfo_screenheight()
+    x = (sc_width/2) - (width/2)
+    y = (sc_height/2) - (height/2)
+    janela_cadastrar.geometry("%dx%d+%d+%d" % (width, height, x, y))
+    janela_cadastrar.resizable(0, 0)
+
+    # --------- LABELS - CADASTRAR -------------
+    lbl_title = Label(form_titulo, text="Cadastre o Veículo Autorizado",
+                      font=('Elephant', 18), bg='#eaed2b', width=280)
+    lbl_title.pack(fill=X)
+    lbl_funcionario = Label(
+        form_CARRO, text='Funcionário', font=('Elephant', 12))
+    lbl_funcionario.grid(row=0, sticky=W)
+    lbl_cpf = Label(form_CARRO, text='CPF', font=('Elephant', 12))
+    lbl_cpf.grid(row=1, sticky=W)
+    lbl_veiculo = Label(form_CARRO, text='Veículo', font=('Elephant', 12))
+    lbl_veiculo.grid(row=2, sticky=W)
+    lbl_placa = Label(form_CARRO, text='Placa', font=('Elephant', 12))
+    lbl_placa.grid(row=3, sticky=W)
+    lbl_setor = Label(form_CARRO, text='Setor', font=('Elephant', 12))
+    lbl_setor.grid(row=4, sticky=W)
+
+    # --------- ENTRY - CADASTRAR -------------
+    funcionario_entry = Entry(
+        form_CARRO, textvariable=funcionario, font=('Lucinda Sans', 12))
+    funcionario_entry.grid(row=0, column=1)
+    funcionario_entry.focus()
+    cpf_entry = Entry(form_CARRO, textvariable=cpf, font=('Lucinda Sans', 12))
+    cpf_entry.grid(row=1, column=1)
+    veiculo_entry = Entry(form_CARRO, textvariable=veiculo,
+                          font=('Lucinda Sans', 12))
+    veiculo_entry.grid(row=2, column=1)
+    placa_entry = Entry(form_CARRO, textvariable=placa,
+                        font=('Lucinda Sans', 12))
+    placa_entry.grid(row=3, column=1)
+    setor_entry = Entry(form_CARRO, textvariable=setor,
+                        font=('Lucinda Sans', 12))
+    setor_entry.grid(row=4, column=1)
+
+    # --------- BOTÃO - CADASTRAR -------------
+    bttn_enviardados = Button(form_CARRO, text="Cadastrar",
+                              width=50, command=enviar_dados)
+    bttn_enviardados.grid(row=6, columnspan=2, pady=10)
+
+
+# ---------------- FRAME PRINCIPAL -------------
+
+topo = Frame(root, width=500, bd=1, relief=SOLID)
+topo.pack(side=TOP)
+mid = Frame(root, width=500, bg='#ab9103')
+mid.pack(side=TOP)
+m_esq = Frame(mid, width=100)
+m_esq.pack(side=LEFT, pady=10)
+m_esqPadding = Frame(mid, width=350, bg="#ab9103")
+m_esqPadding.pack(side=LEFT)
+m_dir = Frame(mid, width=100)
+m_dir.pack(side=RIGHT, pady=10)
+bottom = Frame(root, width=500)
+bottom.pack(side=BOTTOM)
+tableMargin = Frame(root, width=500)
+tableMargin.pack(side=TOP)
+
+# --------------- LABELS PRINCIPAL --------------
+
+lbl_title = Label(topo, text="LISTA DE COLABORADORES AUTORIZADOS",
+                  font=('Elephant', 18), width=500)
+lbl_title.pack(fill=X)
+
+lbl_alterar = Label(bottom, text="Para alterar clique duas vezes no veículo desejado.", font=(
+    'Elephant', 18), width=200)
+lbl_alterar.pack(fill=X)
+
+# --------------- BUTTONS PRINCIPAL --------------
+
+bttn_add = Button(m_esq, text="CADASTRAR", font=(
+    'Elephant, 12'), bg="#a6f5a6", command=inserir_dados)
+bttn_add.pack()
+bttn_apagar = Button(m_dir, text="DELETAR", font=(
+    'Elephant, 12'), bg="#ff6b61", command=apagar_dado)
+bttn_apagar.pack(side=RIGHT)
+
+# --------------- TREEVIEW PRINCIPAL --------------
+
+ScrollbarX = Scrollbar(tableMargin, orient=HORIZONTAL)
+ScrollbarY = Scrollbar(tableMargin, orient=VERTICAL)
+
+tree = ttk.Treeview(tableMargin, columns=("ID", "Funcionário", "CPF", "Veículo", "Placa", "Setor"),
+                    height=400, selectmode="extended", yscrollcommand=ScrollbarY.set, xscrollcommand=ScrollbarX.set)
+ScrollbarY.config(command=tree.yview)
+ScrollbarY.pack(side=RIGHT, fill=Y)
+ScrollbarX.config(command=tree.xview)
+ScrollbarX.pack(side=BOTTOM, fill=X)
+tree.heading("ID", text="ID", anchor=W)
+tree.heading("Funcionário", text="Funcionário", anchor=W)
+tree.heading("CPF", text="CPF", anchor=W)
+tree.heading("Veículo", text="Veículo", anchor=W)
+tree.heading("Placa", text="Placa", anchor=W)
+tree.heading("Setor", text="Setor", anchor=W)
+tree.column('#0', stretch=NO, minwidth=0, width=0)
+tree.column('#1', stretch=NO, minwidth=0, width=30)
+tree.column('#2', stretch=NO, minwidth=0, width=140)
+tree.column('#3', stretch=NO, minwidth=0, width=120)
+tree.column('#4', stretch=NO, minwidth=0, width=120)
+tree.column('#5', stretch=NO, minwidth=0, width=80)
+tree.pack()
+tree.bind('<Double-Button-1>', selecionar_dado)
+
+# --------- MENU - PRINCIPAL ---------------
+
+menu_bar = Menu(root)
+root.config(menu=menu_bar)
+
+# adicionar itens
+
+
+def sobre():
+    msb.showinfo('Sobre', '© Pai do Isaac Corp. Todos os direiros Reservados')
+
+
+file_menu = Menu(menu_bar, tearoff=0)
+menu_bar.add_cascade(label="Menu", menu=file_menu)
+file_menu.add_command(label="Criar novo", command=inserir_dados)
+file_menu.add_separator()
+file_menu.add_command(label="Sair", command=root.destroy)
+
+menuSobre = Menu(menu_bar, tearoff=0)
+menu_bar.add_cascade(label="Sobre", menu=menuSobre)
+menuSobre.add_command(label="Contato", command=sobre)
+
+
+if __name__ == '__main__':
+    database()
+    root.mainloop()
